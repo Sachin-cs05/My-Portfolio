@@ -14,14 +14,43 @@ export function ContactSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setErrorMessage("")
     setIsSubmitting(true)
-    // Simulated submission (can be connected to backend later)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsSubmitting(false)
-    setSubmitted(true)
+
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    const payload = Object.fromEntries(formData.entries())
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const result = (await response.json()) as { error?: string }
+
+      if (!response.ok) {
+        throw new Error(result.error || "Something went wrong while sending your message.")
+      }
+
+      form.reset()
+      setSubmitted(true)
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to send your message right now. Please try again later."
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -69,7 +98,7 @@ export function ContactSection() {
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
                   <a
-                    href="mailto:sachinsaini.dev@gmail.com"
+                    href="mailto:sachinss23cs@gmail.com"
                     className="text-foreground hover:text-cyan-400 transition-colors"
                   >
                     sachinss23cs@gmail.com
@@ -196,6 +225,12 @@ export function ContactSection() {
                     className="bg-card/50 border-border focus:border-cyan-400 resize-none"
                   />
                 </div>
+
+                {errorMessage ? (
+                  <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {errorMessage}
+                  </p>
+                ) : null}
 
                 <Button
                   type="submit"
